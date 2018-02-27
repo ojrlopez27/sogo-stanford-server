@@ -1,0 +1,137 @@
+import java.util.concurrent.TimeUnit
+
+group 'edu.cmu.inmind.multiuser.framework'
+project.ext.set("muf_version", '3.0-rc1')
+
+version "$project.muf_version"
+
+
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: "com.github.johnrengelman.shadow"
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs 'libs'
+    }
+    maven {
+        credentials {
+            username 'inmind'
+            password '2015InMindYahoo'
+        }
+        url "http://www.cs.cmu.edu/afs/cs/project/inmind-cmu-yahoo/www/maven2"
+    }
+    jcenter()
+    maven {
+        url 'https://oss.jfrog.org/libs-snapshot'
+    }
+}
+
+buildscript {
+    repositories {
+        jcenter()
+        maven{
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        // used for zip big files
+        classpath "com.github.jengelman.gradle.plugins:shadow:2.0.1"
+    }
+}
+
+configurations {
+    deployerJars
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: '*.jar')
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    compile group: 'org.awaitility', name: 'awaitility', version: '3.0.0'
+    compile group: 'com.google.guava', name: 'guava', version: '22.0'
+    compile group: 'uk.com.robust-it', name: 'cloning', version: '1.9.3'
+    compile group: 'com.google.code.gson', name: 'gson', version: '2.8.0'
+    deployerJars 'org.apache.maven.wagon:wagon-ssh:2.9'
+    compile group: 'org.zeromq', name: 'jnacl', version: '0.1.0'
+
+    // Stanford core-NLP
+    compile group: 'com.google.protobuf', name: 'protobuf-gradle-plugin', version: '0.8.4'
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+    compile group: 'org.glassfish', name: 'javax.json', version: '1.1.2'
+    compile group: 'joda-time', name: 'joda-time', version: '2.9.9'
+    compile group: 'de.jollyday', name: 'jollyday', version: '0.5.4'
+    compile group: 'com.io7m.xom', name: 'xom', version: '1.2.10'
+    compile group: 'com.googlecode.efficient-java-matrix-library', name: 'ejml', version: '0.25'
+    compile group: 'edu.stanford.nlp', name: 'stanford-corenlp', version: '3.8.0'
+    compile group: 'edu.stanford.nlp', name: 'stanford-corenlp', version: '3.8.0-models'
+    compile group: 'edu.stanford.nlp', name: 'stanford-corenlp', version: '3.8.0-models-english-kbp'
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+    classifier "sources"
+}
+
+shadowJar {
+    baseName = "muf" + '-all'
+}
+tasks.getByPath('build').dependsOn(shadowJar)
+
+apply plugin: 'maven'
+
+uploadShadow {
+    repositories {
+        mavenDeployer {
+            configuration = configurations.deployerJars
+            repository(url: "scp://linux.gp.cs.cmu.edu:/afs/cs/project/inmind-cmu-yahoo/www/maven2/") {
+                //http://stackoverflow.com/questions/12749225/where-to-put-gradle-configuration-i-e-credentials-that-should-not-be-committe
+                authentication(userName: mavenUser, password: mavenPassword)
+            }
+            //deploy locally
+            //repository(url: "file:///Users/oscarr/.m2/repository/")
+
+            pom.project {
+                name 'MultiuserFramework'
+                packaging 'jar'
+                description 'Multiuser Framework. rc = Release Candidate, probably feature complete and should be ' +
+                        'pretty stable - problems should be relatively rare and minor, but worth reporting to try to ' +
+                        'get them fixed for release.'
+                pom.version = "$project.muf_version"
+                pom.artifactId = 'server'
+                pom.groupId = "edu.cmu.inmind.framework.multiuser"
+
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        name 'Oscar Romero'
+                        email 'oscarr@andrew.cmu.edu'
+                    }
+                }
+            }
+        }
+    }
+}
+
+task showMeCache {
+    doLast{
+        configurations.compile.each { println it }
+    }
+}
+
+
+configurations.all {
+    // Check for updates every hour.
+    // You can force it to an immediate update by passing 0 instead of 3600
+    resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.MINUTES)
+    resolutionStrategy.cacheDynamicVersionsFor(0, TimeUnit.MINUTES)
+}
