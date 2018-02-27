@@ -56,10 +56,10 @@ public class MainServer implements Utils.NamedRunnable{
      * settings information that belongs to the session manager
      */
     private void extractConfig(){
-        sessionMngPort = 5111;
+        sessionMngPort = Integer.parseInt(Utils.getProperty("server.port"));
         address = "tcp://*";
         fullAddress = (address.startsWith("tcp:") ? address : "tcp://" + address)
-                    + (address.lastIndexOf(":") == address.length() - 1 ? sessionMngPort : ":" + sessionMngPort);
+                + (address.lastIndexOf(":") == address.length() - 1 ? sessionMngPort : ":" + sessionMngPort);
         // ...
     }
 
