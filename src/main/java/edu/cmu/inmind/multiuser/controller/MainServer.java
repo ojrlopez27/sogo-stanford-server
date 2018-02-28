@@ -37,9 +37,11 @@ public class MainServer implements Utils.NamedRunnable{
     private AtomicBoolean stopped = new AtomicBoolean(false);
     private AtomicBoolean isDestroyed = new AtomicBoolean(false);
     private IntentionParsing intentionParsing;
+    private boolean verbose;
 
 
     public MainServer() throws Throwable{
+        verbose = Boolean.valueOf(Utils.getProperty("verbose"));
         intentionParsing = IntentionParsing.getInstance();
         extractConfig();
         initializeBrokers();
@@ -133,7 +135,7 @@ public class MainServer implements Utils.NamedRunnable{
                     send(msgRequest, sm);
                 }else if (request.getPayload() != null) {
                     String response = intentionParsing.extractPreference(request.getPayload());
-                    System.out.println("intention: " + response);
+                    if(verbose) System.out.println("intention: " + response);
                     send(msgRequest, new SessionMessage("", response));
                 }
             }

@@ -16,14 +16,16 @@ import java.util.Properties;
 public class IntentionParsing {
 	private StanfordCoreNLP pipeline;
 	private static IntentionParsing instance;
+	private boolean verbose;
 
 	private IntentionParsing() {
 		// creates a StanfordCoreNLP object, with POS tagging, lemmatization,
 		// NER, parsing, and coreference resolution
+		verbose = Boolean.valueOf(Utils.getProperty("verbose"));
 		Properties props = new Properties();
 		props.setProperty("annotators", "tokenize, ssplit, pos, lemma,depparse,natlog,openie");
 		pipeline = new StanfordCoreNLP(props);
-        System.out.println("After creating the intention parsing");
+        System.out.println("After creating the StanfordCoreNLP instance");
 	}
 
 	public static IntentionParsing getInstance(){
@@ -50,9 +52,9 @@ public class IntentionParsing {
 		// keys and
 		// has values with custom types
 		List<CoreMap> sentences = document.get(CoreAnnotations.SentencesAnnotation.class);
-		String doc = "";
+//		String doc = "";
+//		String nes = "";
 		String parse = "";
-		String nes = "";
 		for (CoreMap sentence : sentences) {
 			System.out.println(sentence);
 			// traversing the words in the current sentence
@@ -75,8 +77,10 @@ public class IntentionParsing {
 //			}
 
 			SemanticGraph dependencies = sentence.get(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class);
-			parse = dependencies.toString(SemanticGraph.OutputFormat.LIST);
-			System.out.println("dependency graph:\n" + parse);
+			if(verbose){
+				parse = dependencies.toString(SemanticGraph.OutputFormat.LIST);
+				System.out.println("dependency graph:\n" + parse);
+			}
 			Preference preference = new Preference();
 			getLikes(dependencies, preference);
 			return preference;
