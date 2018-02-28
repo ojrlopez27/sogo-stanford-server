@@ -107,39 +107,58 @@ public class IntentionParsing {
 
 
     private void getLikes(SemanticGraph graph, Preference preference){
+	    boolean foundNSUBJ = false, foundVB = false;
         for( SemanticGraphEdge node : graph.edgeListSorted() ) {
-            if (node.getRelation().toString().equals("nsubj")
-                    && node.getDependent().lemma().equalsIgnoreCase("I")) {
-                String mainVerb = node.getSource().lemma();
-                if( mainVerb.equals("like") || mainVerb.equals("love") ){
-                    preference.setType( Preference.LIKE);
-                    preference.setLemaVerb( node.getSource().lemma() );
-                }else if( mainVerb.equals("dislike") || mainVerb.equals("hate") ){
-                    preference.setType( Preference.DISLIKE);
-                    preference.setLemaVerb( node.getSource().lemma() );
-                }else{
-                    // we are only interested in verbs that describe preferences (e.g., like, love, hate...)
-                    return;
+            if(node.getTarget().lemma().equalsIgnoreCase("I") && node.getRelation().toString().equals("nsubj")){
+                foundNSUBJ = true;
+            }else if(foundNSUBJ){
+                if(!foundVB) {
+                    String mainVerb = getVerb(node);
+                    if (mainVerb == null)
+                        continue;
+                    if (mainVerb.equals("like") || mainVerb.equals("love")) {
+                        foundVB = true;
+                        preference.setType(Preference.LIKE);
+                        preference.setLemaVerb(node.getSource().lemma());
+                    } else if (mainVerb.equals("dislike") || mainVerb.equals("hate")) {
+                        foundVB = true;
+                        preference.setType(Preference.DISLIKE);
+                        preference.setLemaVerb(node.getSource().lemma());
+                    }
                 }
-            }else if( node.getRelation().toString().equals("neg") && node.getSource().tag().equals("VB")
-                    && preference.getType() != null){
-                // we are validating whether the verb uses an aux negation (e.g., I don't like books..)
-                preference.setType( Preference.DISLIKE );
-            }else if (node.getRelation().toString().equals("dobj") && ( node.getTarget().tag().equals("NNS") ||
-                    node.getTarget().tag().equals("NS"))){
+                if(foundVB) {
+                    if( node.getRelation().toString().equals("neg") && node.getSource().tag().equals("VB")
+                            && preference.getType() != null){
+                        // we are validating whether the verb uses an aux negation (e.g., I don't like books..)
+                        preference.setType( Preference.DISLIKE );
+                    }
+                    if (node.getRelation().toString().equals("dobj") && node.getTarget().tag().contains("NN")){
+                        preference.setLemmaObj( node.getTarget().lemma() );
+                        return;
+                    }
+                }
+            }else if (foundVB){
                 preference.setLemmaObj( node.getTarget().lemma() );
                 return;
             }
         }
     }
 
+    private String getVerb(SemanticGraphEdge node){
+        String source = node.getSource().tag();
+        String target = node.getTarget().tag();
+        return source.contains("VB")? node.getSource().lemma() : target.contains("VB")? node.getTarget().lemma() : null;
+    }
 
 
 	public static void main(String args[]){
-	    IntentionParsing ip = getInstance();
-	    ip.extractPreference("I want to have two books and you can take the rest");
-        ip.extractPreference("I'd like to have two books and you can take the rest");
-        ip.extractPreference("I don't like hats so you can have the two books");
+        IntentionParsing ip = getInstance();
+        System.out.println(ip.extractPreference("I love books"));
+        System.out.println(ip.extractPreference("you can take the hats because I love books"));
+        System.out.println(ip.extractPreference("you can take the hats because I love reading books"));
+        System.out.println(ip.extractPreference("I want to have two books and you can take the rest"));
+        System.out.println(ip.extractPreference("I'd like to have two books and you can take the rest"));
+        System.out.println(ip.extractPreference("I don't like hats so you can have the two books"));
     }
 
 }
