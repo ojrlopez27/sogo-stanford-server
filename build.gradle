@@ -47,6 +47,13 @@ configurations {
     deployerJars
 }
 
+configurations.all {
+    // Check for updates every hour.
+    // You can force it to an immediate update by passing 0 instead of 3600
+    resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.MINUTES)
+    resolutionStrategy.cacheDynamicVersionsFor(0, TimeUnit.MINUTES)
+}
+
 dependencies {
     compile fileTree(dir: 'libs', include: '*.jar')
     testCompile group: 'junit', name: 'junit', version: '4.11'
@@ -79,9 +86,16 @@ task showMeCache {
 }
 
 
-configurations.all {
-    // Check for updates every hour.
-    // You can force it to an immediate update by passing 0 instead of 3600
-    resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.MINUTES)
-    resolutionStrategy.cacheDynamicVersionsFor(0, TimeUnit.MINUTES)
+sourceSets {
+    main.java.srcDir "src/main/java"
+    main.resources.srcDir "src/main/resources"
+}
+
+jar {
+    manifest {
+        attributes(
+                'Class-Path': configurations.compile { it.getName() }.join(' '),
+                'Main-Class': 'edu.cmu.inmind.multiuser.controller.MainServer'
+        )
+    }
 }
