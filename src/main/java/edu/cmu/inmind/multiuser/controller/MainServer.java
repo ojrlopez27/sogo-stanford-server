@@ -131,8 +131,11 @@ public class MainServer implements Utils.NamedRunnable{
             msgRequest = serverCommController.receive(reply);
             System.out.println("**** 1");
             if( msgRequest != null ) {
+                System.out.println("**** 1.1");
                 SessionMessage request = getServerRequest(msgRequest);
+                System.out.println("**** 1.2 " + Utils.toJson(request));
                 if(request.getRequestType().equals(Constants.REQUEST_CONNECT)){
+                    System.out.println("**** 1.3");
                     SessionMessage sm = new SessionMessage(Constants.SESSION_INITIATED);
                     sm.setPayload("NO_SESSION");
                     send(msgRequest, sm);
