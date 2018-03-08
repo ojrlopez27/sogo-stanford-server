@@ -139,13 +139,15 @@ public class MainServer implements Utils.NamedRunnable{
                     SessionMessage sm = new SessionMessage(Constants.SESSION_INITIATED);
                     sm.setPayload("NO_SESSION");
                     send(msgRequest, sm);
-                }else if(request.getMessageId().equals(Constants.MSG_REQ_PREF_EXTRACTION)){
+                }else if(request.getMessageId().equals(Constants.MSG_REQ_PREF_EXTRACTION)
+                        || request.getRequestType().equals(Constants.MSG_REQ_PREF_EXTRACTION)){
                     if (request.getPayload() != null) {
                         String response = intentionParsing.extractPreference(request.getPayload());
                         if (verbose) System.out.println("intention: " + response);
                         send(msgRequest, new SessionMessage(Constants.MSG_REP_PREF_EXTRACTION, response));
                     }
-                }else if(request.getMessageId().equals(Constants.MSG_REQ_CLAUSE_BREAKING)){
+                }else if(request.getRequestType().equals(Constants.MSG_REQ_CLAUSE_BREAKING)
+                        || request.getMessageId().equals(Constants.MSG_REQ_CLAUSE_BREAKING)){
                     System.out.println("**** 2");
                     if (request.getPayload() != null) {
                         System.out.println("**** 3 " +  request.getPayload());
