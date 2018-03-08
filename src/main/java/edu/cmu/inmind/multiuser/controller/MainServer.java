@@ -129,6 +129,7 @@ public class MainServer implements Utils.NamedRunnable{
         if( !stopped.get() ) {
             ZMsgWrapper msgRequest;
             msgRequest = serverCommController.receive(reply);
+            System.out.println("**** 1");
             if( msgRequest != null ) {
                 SessionMessage request = getServerRequest(msgRequest);
                 if(request.getRequestType().equals(Constants.REQUEST_CONNECT)){
@@ -142,11 +143,16 @@ public class MainServer implements Utils.NamedRunnable{
                         send(msgRequest, new SessionMessage(Constants.MSG_REP_PREF_EXTRACTION, response));
                     }
                 }else if(request.getMessageId().equals(Constants.MSG_REQ_CLAUSE_BREAKING)){
+                    System.out.println("**** 2");
                     if (request.getPayload() != null) {
+                        System.out.println("**** 3 " +  request.getPayload());
                         List<String> clauses = intentionParsing.clauseBreakSent(
                                 Utils.fromJson(request.getPayload(), Sentence.class).getSentence());
+                        System.out.println("**** 9");
                         System.out.println("clauses: " + Utils.toJson(clauses));
+                        System.out.println("**** 10");
                         send(msgRequest, new SessionMessage(Constants.MSG_REP_CLAUSE_BREAKING, Utils.toJson(clauses)));
+                        System.out.println("**** 11");
                     }
                 }
             }
