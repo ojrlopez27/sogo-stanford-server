@@ -140,64 +140,67 @@ public class IntentionParsing {
     }
 
     public List<String> clauseBreakSent(String original_Sent) {
-        Annotation document = new Annotation(original_Sent);
-        // run all Annotators on this text
-        pipeline.annotate(document);
-        List<CoreMap> sentences = document.get(CoreAnnotations.SentencesAnnotation.class);
+        if( original_Sent != null && !original_Sent.isEmpty() ) {
+            Annotation document = new Annotation(original_Sent);
+            // run all Annotators on this text
+            pipeline.annotate(document);
+            List<CoreMap> sentences = document.get(CoreAnnotations.SentencesAnnotation.class);
 
-        original_Sent = "";
-        for (CoreMap sentence : sentences) {
-            original_Sent += sentence;
-        }
-
-        List<String> clause_in_sentence = new ArrayList<>();
-        for (CoreMap sentence : sentences) {
-            List<String> final_clause_string = new ArrayList<>();
-            List<CoreLabel> predicates = new ArrayList<>();
-            List<CoreLabel> removeVerb=new ArrayList<>();
-
-            HashMap<SentenceFragment, List<CoreLabel>> clause_info = new HashMap<>();
-            HashMap<Integer, String> word_dic = new HashMap<>();
-
-            // this is the Stanford dependency graph of the current sentence
-            SemanticGraph dependencies = sentence.get(SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation.class);
-            for(TypedDependency depedency: dependencies.typedDependencies()) {
-                // System.out.println(depedency);
-
-                // System.out.println(depedency.reln());
-
-                //Remove all complementary verb
-                if (depedency.reln().toString().equals("xcomp")) {
-                    removeVerb.add(depedency.gov().backingLabel());
-                }
+            original_Sent = "";
+            for (CoreMap sentence : sentences) {
+                original_Sent += sentence;
             }
 
-            for (CoreLabel token : sentence.get(CoreAnnotations.TokensAnnotation.class)) {
-                // this is the POS tag of the token
-                String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
-                word_dic.put(token.index(), token.get(CoreAnnotations.TextAnnotation.class));
-                //Extract all the verb in the sentence
-                if (pos.startsWith("V") && !removeVerb.contains(token)) {
-                    predicates.add(token);
-                }
-            }
-            List<SentenceFragment> clauses = clause_stance.clausesInSentence(sentence);
-            for (SentenceFragment clause : clauses) {
-                List<CoreLabel> words = clause.words;
-                List<CoreLabel> clause_predicates = new ArrayList<>();
-                for (CoreLabel predic : predicates) {
-                    if (words.contains(predic)) {
-                        System.out.print(predic + " ");
-                        clause_predicates.add(predic);
+            List<String> clause_in_sentence = new ArrayList<>();
+            for (CoreMap sentence : sentences) {
+                List<String> final_clause_string = new ArrayList<>();
+                List<CoreLabel> predicates = new ArrayList<>();
+                List<CoreLabel> removeVerb = new ArrayList<>();
+
+                HashMap<SentenceFragment, List<CoreLabel>> clause_info = new HashMap<>();
+                HashMap<Integer, String> word_dic = new HashMap<>();
+
+                // this is the Stanford dependency graph of the current sentence
+                SemanticGraph dependencies = sentence.get(SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation.class);
+                for (TypedDependency depedency : dependencies.typedDependencies()) {
+                    // System.out.println(depedency);
+
+                    // System.out.println(depedency.reln());
+
+                    //Remove all complementary verb
+                    if (depedency.reln().toString().equals("xcomp")) {
+                        removeVerb.add(depedency.gov().backingLabel());
                     }
                 }
-                clause_info.put(clause, clause_predicates);
-                System.out.println();
+
+                for (CoreLabel token : sentence.get(CoreAnnotations.TokensAnnotation.class)) {
+                    // this is the POS tag of the token
+                    String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
+                    word_dic.put(token.index(), token.get(CoreAnnotations.TextAnnotation.class));
+                    //Extract all the verb in the sentence
+                    if (pos.startsWith("V") && !removeVerb.contains(token)) {
+                        predicates.add(token);
+                    }
+                }
+                List<SentenceFragment> clauses = clause_stance.clausesInSentence(sentence);
+                for (SentenceFragment clause : clauses) {
+                    List<CoreLabel> words = clause.words;
+                    List<CoreLabel> clause_predicates = new ArrayList<>();
+                    for (CoreLabel predic : predicates) {
+                        if (words.contains(predic)) {
+                            System.out.print(predic + " ");
+                            clause_predicates.add(predic);
+                        }
+                    }
+                    clause_info.put(clause, clause_predicates);
+                    System.out.println();
+                }
+                final_clause_string = removeLargeClause(clause_info, predicates, word_dic);
+                clause_in_sentence.addAll(final_clause_string);
             }
-            final_clause_string = removeLargeClause(clause_info, predicates, word_dic);
-            clause_in_sentence.addAll(final_clause_string);
+            return clause_in_sentence;
         }
-        return clause_in_sentence;
+        return null;
     }
 
 
