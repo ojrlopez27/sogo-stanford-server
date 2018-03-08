@@ -145,7 +145,7 @@ public class MainServer implements Utils.NamedRunnable{
                     if (request.getPayload() != null) {
                         List<String> clauses = intentionParsing.clauseBreakSent(
                                 Utils.fromJson(request.getPayload(), Sentence.class).getSentence());
-                        if (verbose) System.out.println("clauses: " + Arrays.toString(clauses.toArray()));
+                        System.out.println("clauses: " + Utils.toJson(clauses));
                         send(msgRequest, new SessionMessage(Constants.MSG_REP_CLAUSE_BREAKING, Utils.toJson(clauses)));
                     }
                 }
