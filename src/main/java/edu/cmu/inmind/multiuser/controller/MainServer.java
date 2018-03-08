@@ -129,13 +129,9 @@ public class MainServer implements Utils.NamedRunnable{
         if( !stopped.get() ) {
             ZMsgWrapper msgRequest;
             msgRequest = serverCommController.receive(reply);
-            System.out.println("**** 1");
             if( msgRequest != null ) {
-                System.out.println("**** 1.1");
                 SessionMessage request = getServerRequest(msgRequest);
-                System.out.println("**** 1.2 " + Utils.toJson(request));
                 if(request.getRequestType().equals(Constants.REQUEST_CONNECT)){
-                    System.out.println("**** 1.3");
                     SessionMessage sm = new SessionMessage(Constants.SESSION_INITIATED);
                     sm.setPayload("NO_SESSION");
                     send(msgRequest, sm);
@@ -148,16 +144,11 @@ public class MainServer implements Utils.NamedRunnable{
                     }
                 }else if(request.getRequestType().equals(Constants.MSG_REQ_CLAUSE_BREAKING)
                         || request.getMessageId().equals(Constants.MSG_REQ_CLAUSE_BREAKING)){
-                    System.out.println("**** 2");
                     if (request.getPayload() != null) {
-                        System.out.println("**** 3 " +  request.getPayload());
                         List<String> clauses = intentionParsing.clauseBreakSent(
                                 Utils.fromJson(request.getPayload(), Sentence.class).getSentence());
-                        System.out.println("**** 9");
-                        System.out.println("clauses: " + Utils.toJson(clauses));
-                        System.out.println("**** 10");
+                        if(verbose) System.out.println("clauses: " + Utils.toJson(clauses));
                         send(msgRequest, new SessionMessage(Constants.MSG_REP_CLAUSE_BREAKING, Utils.toJson(clauses)));
-                        System.out.println("**** 11");
                     }
                 }
             }

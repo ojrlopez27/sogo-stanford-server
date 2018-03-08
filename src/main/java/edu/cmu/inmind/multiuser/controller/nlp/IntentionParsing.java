@@ -140,20 +140,17 @@ public class IntentionParsing {
     }
 
     public List<String> clauseBreakSent(String original_Sent) {
-        System.out.println("**** 4");
         if( original_Sent != null && !original_Sent.isEmpty() ) {
             Annotation document = new Annotation(original_Sent);
             // run all Annotators on this text
             pipeline.annotate(document);
             List<CoreMap> sentences = document.get(CoreAnnotations.SentencesAnnotation.class);
 
-            System.out.println("**** 5");
             original_Sent = "";
             for (CoreMap sentence : sentences) {
                 original_Sent += sentence;
             }
 
-            System.out.println("**** 6");
             List<String> clause_in_sentence = new ArrayList<>();
             for (CoreMap sentence : sentences) {
                 List<String> final_clause_string = new ArrayList<>();
@@ -175,7 +172,6 @@ public class IntentionParsing {
                         removeVerb.add(depedency.gov().backingLabel());
                     }
                 }
-                System.out.println("**** 7");
 
                 for (CoreLabel token : sentence.get(CoreAnnotations.TokensAnnotation.class)) {
                     // this is the POS tag of the token
@@ -201,7 +197,6 @@ public class IntentionParsing {
                 }
                 final_clause_string = removeLargeClause(clause_info, predicates, word_dic);
                 clause_in_sentence.addAll(final_clause_string);
-                System.out.println("**** 8");
             }
             return clause_in_sentence;
         }
