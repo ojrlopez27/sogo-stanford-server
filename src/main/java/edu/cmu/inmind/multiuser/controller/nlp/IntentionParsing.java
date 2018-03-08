@@ -11,6 +11,7 @@ import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
+import edu.stanford.nlp.trees.TypedDependency;
 import edu.stanford.nlp.util.CoreMap;
 
 import java.util.*;
@@ -153,15 +154,30 @@ public class IntentionParsing {
         for (CoreMap sentence : sentences) {
             List<String> final_clause_string = new ArrayList<>();
             List<CoreLabel> predicates = new ArrayList<>();
+            List<CoreLabel> removeVerb=new ArrayList<>();
 
             HashMap<SentenceFragment, List<CoreLabel>> clause_info = new HashMap<>();
             HashMap<Integer, String> word_dic = new HashMap<>();
+
+            // this is the Stanford dependency graph of the current sentence
+            SemanticGraph dependencies = sentence.get(SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation.class);
+            for(TypedDependency depedency: dependencies.typedDependencies()) {
+                // System.out.println(depedency);
+
+                // System.out.println(depedency.reln());
+
+                //Remove all complementary verb
+                if (depedency.reln().toString().equals("xcomp")) {
+                    removeVerb.add(depedency.gov().backingLabel());
+                }
+            }
 
             for (CoreLabel token : sentence.get(CoreAnnotations.TokensAnnotation.class)) {
                 // this is the POS tag of the token
                 String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
                 word_dic.put(token.index(), token.get(CoreAnnotations.TextAnnotation.class));
-                if (pos.startsWith("V")) {
+                //Extract all the verb in the sentence
+                if (pos.startsWith("V") && !removeVerb.contains(token)) {
                     predicates.add(token);
                 }
             }
