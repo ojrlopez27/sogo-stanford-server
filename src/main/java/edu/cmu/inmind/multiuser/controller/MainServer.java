@@ -8,6 +8,8 @@ import edu.cmu.inmind.multiuser.controller.nlp.IntentionParsing;
 import edu.cmu.inmind.multiuser.controller.resources.ResourceLocator;
 import org.zeromq.ZMsg;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -133,10 +135,18 @@ public class MainServer implements Utils.NamedRunnable{
                     SessionMessage sm = new SessionMessage(Constants.SESSION_INITIATED);
                     sm.setPayload("NO_SESSION");
                     send(msgRequest, sm);
-                }else if (request.getPayload() != null) {
-                    String response = intentionParsing.extractPreference(request.getPayload());
-                    if(verbose) System.out.println("intention: " + response);
-                    send(msgRequest, new SessionMessage("", response));
+                }else if(request.getMessageId().equals(Constants.MSG_REQ_PREF_EXTRACTION)){
+                    if (request.getPayload() != null) {
+                        String response = intentionParsing.extractPreference(request.getPayload());
+                        if (verbose) System.out.println("intention: " + response);
+                        send(msgRequest, new SessionMessage(Constants.MSG_REP_PREF_EXTRACTION, response));
+                    }
+                }else if(request.getMessageId().equals(Constants.MSG_REQ_CLAUSE_BREAKING)){
+                    if (request.getPayload() != null) {
+                        List<String> clauses = intentionParsing.clauseBreakSent(request.getPayload());
+                        if (verbose) System.out.println("clauses: " + Arrays.toString(clauses.toArray()));
+                        send(msgRequest, new SessionMessage(Constants.MSG_REP_CLAUSE_BREAKING, Utils.toJson(clauses)));
+                    }
                 }
             }
         }

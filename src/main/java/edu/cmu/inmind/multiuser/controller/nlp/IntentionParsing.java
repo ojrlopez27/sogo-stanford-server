@@ -3,6 +3,9 @@ package edu.cmu.inmind.multiuser.controller.nlp;
 import edu.cmu.inmind.multiuser.controller.common.Preference;
 import edu.cmu.inmind.multiuser.controller.common.Utils;
 import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.naturalli.OpenIE;
+import edu.stanford.nlp.naturalli.SentenceFragment;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.semgraph.SemanticGraph;
@@ -10,11 +13,12 @@ import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.util.CoreMap;
 
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class IntentionParsing {
 	private StanfordCoreNLP pipeline;
+    private OpenIE clause_stance;
 	private static IntentionParsing instance;
 	private boolean verbose;
 
@@ -25,7 +29,8 @@ public class IntentionParsing {
 		Properties props = new Properties();
 		props.setProperty("annotators", "tokenize, ssplit, pos, lemma,depparse,natlog,openie");
 		pipeline = new StanfordCoreNLP(props);
-        System.out.println("After creating the StanfordCoreNLP instance");
+		clause_stance = new OpenIE(props);
+        System.out.println("After creating the StanfordCoreNLP and OpenIE instances");
 	}
 
 	public static IntentionParsing getInstance(){
@@ -89,23 +94,6 @@ public class IntentionParsing {
 	}
 
 
-//	private void getLikes(SemanticGraph graph, List<SemanticGraphEdge> nodes, Pair pair){
-//	    for( SemanticGraphEdge node : nodes) {
-//            if (node.getRelation().toString().equals("nsubj")
-//                    && node.getDependent().getString(CoreAnnotations.LemmaAnnotation.class).equalsIgnoreCase("I")) {
-//                System.out.println("nsubj: " + node.getSource().tag());
-//                pair.fst = node.getSource().lemma();
-//                getLikes(graph, graph.getIncomingEdgesSorted(node.getSource()), pair);
-//            }else if (node.getRelation().toString().equals("dobj")){
-//                pair.snd = node.getSource().lemma();
-//                return;
-//            }else{
-//                getLikes(graph, graph.getOutEdgesSorted(node.getSource()), pair);
-//            }
-//        }
-//	}
-
-
     private void getLikes(SemanticGraph graph, Preference preference){
 	    boolean foundNSUBJ = false, foundVB = false;
         for( SemanticGraphEdge node : graph.edgeListSorted() ) {
@@ -150,15 +138,155 @@ public class IntentionParsing {
         return source.contains("VB")? node.getSource().lemma() : target.contains("VB")? node.getTarget().lemma() : null;
     }
 
+    public List<String> clauseBreakSent(String original_Sent) {
+        Annotation document = new Annotation(original_Sent);
+        // run all Annotators on this text
+        pipeline.annotate(document);
+        List<CoreMap> sentences = document.get(CoreAnnotations.SentencesAnnotation.class);
+
+        original_Sent = "";
+        for (CoreMap sentence : sentences) {
+            original_Sent += sentence;
+        }
+
+        List<String> clause_in_sentence = new ArrayList<>();
+        for (CoreMap sentence : sentences) {
+            List<String> final_clause_string = new ArrayList<>();
+            List<CoreLabel> predicates = new ArrayList<>();
+
+            HashMap<SentenceFragment, List<CoreLabel>> clause_info = new HashMap<>();
+            HashMap<Integer, String> word_dic = new HashMap<>();
+
+            for (CoreLabel token : sentence.get(CoreAnnotations.TokensAnnotation.class)) {
+                // this is the POS tag of the token
+                String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
+                word_dic.put(token.index(), token.get(CoreAnnotations.TextAnnotation.class));
+                if (pos.startsWith("V")) {
+                    predicates.add(token);
+                }
+            }
+            List<SentenceFragment> clauses = clause_stance.clausesInSentence(sentence);
+            for (SentenceFragment clause : clauses) {
+                List<CoreLabel> words = clause.words;
+                List<CoreLabel> clause_predicates = new ArrayList<>();
+                for (CoreLabel predic : predicates) {
+                    if (words.contains(predic)) {
+                        System.out.print(predic + " ");
+                        clause_predicates.add(predic);
+                    }
+                }
+                clause_info.put(clause, clause_predicates);
+                System.out.println();
+            }
+            final_clause_string = removeLargeClause(clause_info, predicates, word_dic);
+            clause_in_sentence.addAll(final_clause_string);
+        }
+        return clause_in_sentence;
+    }
+
+
+    private List<String> removeLargeClause(HashMap<SentenceFragment, List<CoreLabel>> clause_predicate,
+                                           List<CoreLabel> predicates, HashMap<Integer, String> word_dic) {
+
+        List<String> final_clause = new ArrayList<>();
+        List<SentenceFragment> waitList_clause = new ArrayList<>();
+        HashMap<CoreLabel, SentenceFragment> shortest_clause = new HashMap<>();
+        for (int i = 0; i < predicates.size(); i++) {
+            SentenceFragment candidate = null;
+            int candid_contain_num_words = Integer.MAX_VALUE;
+            CoreLabel current_predicate = predicates.get(i);
+            for (SentenceFragment clause : clause_predicate.keySet()) {
+                List<CoreLabel> pred_in_clause = clause_predicate.get(clause);
+                if (pred_in_clause.contains(current_predicate) && clause.words.size() < candid_contain_num_words) {
+
+                    candid_contain_num_words = clause.words.size();
+                    candidate = clause;
+                }
+            }
+            shortest_clause.put(current_predicate, candidate);
+            //Update candidate predicate list by minus its only-predict
+            if (clause_predicate.get(candidate).size() > 1) {
+                // The segment contain at least on predict that only be in this segment
+                waitList_clause.add(candidate);
+            } else {
+                final_clause.add(candidate.toString().trim());
+            }
+            clause_predicate.get(candidate).remove(current_predicate);
+        }
+
+        for (SentenceFragment wait_clause : waitList_clause) {
+            Set<Integer> curr_wait_clause = new HashSet<Integer>(Arrays.stream(parseListLabel(wait_clause.words)).boxed().collect(Collectors.toList()));
+            List<CoreLabel> wait_predicats = clause_predicate.get(wait_clause);
+            Set<Integer> tokensets = new HashSet<>();
+            for (CoreLabel rest_predicate : wait_predicats) {
+                SentenceFragment corr_shortest = shortest_clause.get(rest_predicate);
+                tokensets.addAll(longestForward(parseListLabel(corr_shortest.words)));
+            }
+            tokensets.retainAll(curr_wait_clause);
+            curr_wait_clause.removeAll(tokensets);
+            List<Integer> list = new ArrayList<Integer>(curr_wait_clause);
+            String convert_string = "";
+            for (int j = 0; j < list.size(); j++) {
+                convert_string += word_dic.get(list.get(j)) + " ";
+            }
+            convert_string.trim();
+            if(verbose) System.out.println("CONVERTSTRING!!!!!: " + convert_string);
+            if (!final_clause.contains(convert_string)) {
+                final_clause.add(convert_string);
+            }
+            //Check clause word number threhould
+        }
+        return final_clause;
+    }
+
+
+    private int[] parseListLabel(List<CoreLabel> words) {
+        int fragment_index[] = new int[words.size()];
+        for (int i = 0; i < words.size(); i++) {
+            fragment_index[i] = words.get(i).index();
+        }
+        return fragment_index;
+    }
+
+
+    private Set<Integer> longestForward(int[] arr) {
+        int subSeqLength = 1;
+        int longest = 1;
+
+        for (int i = 0; i < arr.length - 1; i++) {
+            if (arr[i] == arr[i + 1] - 1)//We need to check if the current is equal to the next
+            {
+                subSeqLength++;//if it is we increment
+                if (subSeqLength > longest)//we assign the longest and new bounds
+                {
+                    longest = subSeqLength;
+                }
+
+            } else
+                subSeqLength = 1;//else re-initiate the straight length
+        }
+        Set<Integer> tokenset = new HashSet<>(Arrays.stream(arr).boxed().collect(Collectors.toList()));
+        return tokenset;
+    }
+
+
+
 
 	public static void main(String args[]){
         IntentionParsing ip = getInstance();
-        System.out.println(ip.extractPreference("I love books"));
-        System.out.println(ip.extractPreference("you can take the hats because I love books"));
-        System.out.println(ip.extractPreference("you can take the hats because I love reading books"));
-        System.out.println(ip.extractPreference("I want to have two books and you can take the rest"));
-        System.out.println(ip.extractPreference("I'd like to have two books and you can take the rest"));
-        System.out.println(ip.extractPreference("I don't like hats so you can have the two books"));
+        List<String> sentences = new ArrayList<>();
+        sentences.add("I love books");
+        sentences.add("you can take the hats because I love books");
+        sentences.add("you can take the hats because I love reading books");
+        sentences.add("I want to have two books and you can take the rest");
+        sentences.add("I'd like to have two books and you can take the rest");
+        sentences.add("I don't like hats so you can have the two books");
+
+
+        for(String sentence :  sentences) {
+            //System.out.println(ip.extractPreference(sentence));
+            System.out.println(Arrays.toString(ip.clauseBreakSent(sentence).toArray()) );
+        }
     }
 
 }
