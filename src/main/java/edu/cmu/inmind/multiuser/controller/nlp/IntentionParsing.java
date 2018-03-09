@@ -147,6 +147,7 @@ public class IntentionParsing {
             List<CoreMap> sentences = document.get(CoreAnnotations.SentencesAnnotation.class);
 
             original_Sent = "";
+            original_Sent=original_Sent.replace(" u "," you ");
             for (CoreMap sentence : sentences) {
                 original_Sent += sentence;
             }
@@ -168,8 +169,11 @@ public class IntentionParsing {
                     // System.out.println(depedency.reln());
 
                     //Remove all complementary verb
-                    if (depedency.reln().toString().equals("xcomp")) {
-                        removeVerb.add(depedency.gov().backingLabel());
+                    if(depedency.reln().toString().equals("xcomp")) {
+                        CoreLabel dep_word=depedency.dep().backingLabel();
+                        if(dep_word.get(CoreAnnotations.PartOfSpeechAnnotation.class).startsWith("V")){
+                            removeVerb.add(depedency.gov().backingLabel());
+                        }
                     }
                 }
 
@@ -248,8 +252,8 @@ public class IntentionParsing {
             for (int j = 0; j < list.size(); j++) {
                 convert_string += word_dic.get(list.get(j)) + " ";
             }
-            convert_string.trim();
-            if(verbose) System.out.println("CONVERTSTRING!!!!!: " + convert_string);
+            convert_string=convert_string.trim();
+            System.out.println("CONVERTSTRING!!!!!: " + convert_string);
             if (!final_clause.contains(convert_string)) {
                 final_clause.add(convert_string);
             }
@@ -284,7 +288,7 @@ public class IntentionParsing {
             } else
                 subSeqLength = 1;//else re-initiate the straight length
         }
-        Set<Integer> tokenset = new HashSet<>(Arrays.stream(arr).boxed().collect(Collectors.toList()));
+        Set<Integer> tokenset = new HashSet<Integer>(Arrays.stream(arr).boxed().collect(Collectors.toList()));
         return tokenset;
     }
 
