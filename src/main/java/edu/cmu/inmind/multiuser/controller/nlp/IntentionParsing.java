@@ -140,7 +140,7 @@ public class IntentionParsing {
         return source.contains("VB")? node.getSource().lemma() : target.contains("VB")? node.getTarget().lemma() : null;
     }
 
-    public List<Sentence> clauseBreakSent(String original_Sent) {
+    public List<String> clauseBreakSent(String original_Sent) {
         System.out.println("*** 1");
         if( original_Sent != null && !original_Sent.isEmpty() ) {
             System.out.println("*** 2 " + original_Sent);
@@ -215,7 +215,8 @@ public class IntentionParsing {
             for(String cl : clause_in_sentence){
                 sentenceList.add(new Sentence(cl));
             }
-            return sentenceList;
+//            return sentenceList;
+            return clause_in_sentence;
         }
         return null;
     }
