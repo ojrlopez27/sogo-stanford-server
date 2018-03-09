@@ -1,5 +1,6 @@
 package edu.cmu.inmind.multiuser.controller.nlp;
 
+import edu.cmu.inmind.multiuser.controller.Sentence;
 import edu.cmu.inmind.multiuser.controller.common.Preference;
 import edu.cmu.inmind.multiuser.controller.common.Utils;
 import edu.stanford.nlp.ling.CoreAnnotations;
@@ -139,7 +140,7 @@ public class IntentionParsing {
         return source.contains("VB")? node.getSource().lemma() : target.contains("VB")? node.getTarget().lemma() : null;
     }
 
-    public List<String> clauseBreakSent(String original_Sent) {
+    public List<Sentence> clauseBreakSent(String original_Sent) {
         System.out.println("*** 1");
         if( original_Sent != null && !original_Sent.isEmpty() ) {
             System.out.println("*** 2 " + original_Sent);
@@ -210,7 +211,11 @@ public class IntentionParsing {
                 System.out.println("*** 7 " + final_clause_string);
             }
             System.out.println("*** 8 " + clause_in_sentence);
-            return clause_in_sentence;
+            List<Sentence> sentenceList = new ArrayList<>();
+            for(String cl : clause_in_sentence){
+                sentenceList.add(new Sentence(cl));
+            }
+            return sentenceList;
         }
         return null;
     }
