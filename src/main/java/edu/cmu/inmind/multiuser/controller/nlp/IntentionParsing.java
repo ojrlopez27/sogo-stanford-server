@@ -140,7 +140,9 @@ public class IntentionParsing {
     }
 
     public List<String> clauseBreakSent(String original_Sent) {
+        System.out.println("*** 1");
         if( original_Sent != null && !original_Sent.isEmpty() ) {
+            System.out.println("*** 2 " + original_Sent);
             Annotation document = new Annotation(original_Sent);
             // run all Annotators on this text
             pipeline.annotate(document);
@@ -151,9 +153,11 @@ public class IntentionParsing {
             for (CoreMap sentence : sentences) {
                 original_Sent += sentence;
             }
+            System.out.println("*** 3 " + original_Sent);
 
             List<String> clause_in_sentence = new ArrayList<>();
             for (CoreMap sentence : sentences) {
+                System.out.println("*** 4 " + sentence.toString());
                 List<String> final_clause_string = new ArrayList<>();
                 List<CoreLabel> predicates = new ArrayList<>();
                 List<CoreLabel> removeVerb = new ArrayList<>();
@@ -179,6 +183,7 @@ public class IntentionParsing {
 
                 for (CoreLabel token : sentence.get(CoreAnnotations.TokensAnnotation.class)) {
                     // this is the POS tag of the token
+                    System.out.println("*** 5 " + token.toString());
                     String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
                     word_dic.put(token.index(), token.get(CoreAnnotations.TextAnnotation.class));
                     //Extract all the verb in the sentence
@@ -188,6 +193,7 @@ public class IntentionParsing {
                 }
                 List<SentenceFragment> clauses = clause_stance.clausesInSentence(sentence);
                 for (SentenceFragment clause : clauses) {
+                    System.out.println("*** 6 " + clause.toString());
                     List<CoreLabel> words = clause.words;
                     List<CoreLabel> clause_predicates = new ArrayList<>();
                     for (CoreLabel predic : predicates) {
@@ -201,7 +207,9 @@ public class IntentionParsing {
                 }
                 final_clause_string = removeLargeClause(clause_info, predicates, word_dic);
                 clause_in_sentence.addAll(final_clause_string);
+                System.out.println("*** 7 " + final_clause_string);
             }
+            System.out.println("*** 8 " + clause_in_sentence);
             return clause_in_sentence;
         }
         return null;
