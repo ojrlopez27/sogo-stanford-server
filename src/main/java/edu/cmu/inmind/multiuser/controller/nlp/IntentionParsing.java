@@ -48,6 +48,7 @@ public class IntentionParsing {
 
 
 	private Preference extractSemGraph(String utterance){
+        utterance = utterance.replace("<eos>", "");
 		// create an empty Annotation just with the given text
 		Annotation document = new Annotation(utterance);
 
@@ -141,6 +142,7 @@ public class IntentionParsing {
     }
 
     public List<String> clauseBreakSent(String original_Sent) {
+        original_Sent = original_Sent.replace("<eos>", "");
         if( original_Sent != null && !original_Sent.isEmpty() ) {
             Annotation document = new Annotation(original_Sent);
             // run all Annotators on this text
@@ -301,7 +303,10 @@ public class IntentionParsing {
 	public static void main(String args[]){
         IntentionParsing ip = getInstance();
         List<String> sentences = new ArrayList<>();
-        sentences.add("you can have the hats if i can have the book and balls");
+        sentences.add("i can give you the hats if i can have the book and balls <eos>");
+        sentences.add("i can give you the hats if i can have the book and balls");
+//        sentences.add("i need the book and at least one ball <eos>");
+//        sentences.add("you can have the hats if i can have the book and balls");
 //        sentences.add("I love books");
 //        sentences.add("you can take the hats because I love books");
 //        sentences.add("you can take the hats because I love reading books");
