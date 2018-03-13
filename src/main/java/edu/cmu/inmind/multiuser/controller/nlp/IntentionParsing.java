@@ -155,20 +155,18 @@ public class IntentionParsing {
 
             List<String> clause_in_sentence = new ArrayList<>();
             for (CoreMap sentence : sentences) {
-                List<String> final_clause_string = new ArrayList<>();
+                List<String> final_clause_string= new ArrayList<>();
+                List<CoreLabel> removeVerb=new ArrayList<>();
                 List<CoreLabel> predicates = new ArrayList<>();
-                List<CoreLabel> removeVerb = new ArrayList<>();
 
                 HashMap<SentenceFragment, List<CoreLabel>> clause_info = new HashMap<>();
                 HashMap<Integer, String> word_dic = new HashMap<>();
 
                 // this is the Stanford dependency graph of the current sentence
                 SemanticGraph dependencies = sentence.get(SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation.class);
-                for (TypedDependency depedency : dependencies.typedDependencies()) {
+                for(TypedDependency depedency: dependencies.typedDependencies()){
                     // System.out.println(depedency);
-
                     // System.out.println(depedency.reln());
-
                     //Remove all complementary verb
                     if(depedency.reln().toString().equals("xcomp")) {
                         CoreLabel dep_word=depedency.dep().backingLabel();
@@ -177,7 +175,6 @@ public class IntentionParsing {
                         }
                     }
                 }
-
                 for (CoreLabel token : sentence.get(CoreAnnotations.TokensAnnotation.class)) {
                     // this is the POS tag of the token
                     String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
@@ -203,6 +200,11 @@ public class IntentionParsing {
                 final_clause_string = removeLargeClause(clause_info, predicates, word_dic);
                 clause_in_sentence.addAll(final_clause_string);
             }
+            if(clause_in_sentence.isEmpty()){
+                String[] origin=original_Sent.split(",");
+                clause_in_sentence.addAll(Arrays.asList(origin));
+            }
+            System.out.println(clause_in_sentence);
             return clause_in_sentence;
         }
         return null;
@@ -299,12 +301,13 @@ public class IntentionParsing {
 	public static void main(String args[]){
         IntentionParsing ip = getInstance();
         List<String> sentences = new ArrayList<>();
-        sentences.add("I love books");
-        sentences.add("you can take the hats because I love books");
-        sentences.add("you can take the hats because I love reading books");
-        sentences.add("I want to have two books and you can take the rest");
-        sentences.add("I'd like to have two books and you can take the rest");
-        sentences.add("I don't like hats so you can have the two books");
+        sentences.add("you can have the hats if i can have the book and balls");
+//        sentences.add("I love books");
+//        sentences.add("you can take the hats because I love books");
+//        sentences.add("you can take the hats because I love reading books");
+//        sentences.add("I want to have two books and you can take the rest");
+//        sentences.add("I'd like to have two books and you can take the rest");
+//        sentences.add("I don't like hats so you can have the two books");
 
 
         for(String sentence :  sentences) {
