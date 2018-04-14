@@ -142,6 +142,14 @@ public class IntentionParsing {
     }
 
     public List<String> clauseBreakSent(String original_Sent) {
+        original_Sent=original_Sent.replace(" i "," I ");
+        original_Sent=original_Sent.replace(",i ",", I ");
+        original_Sent=original_Sent.replace(".i ",". I ");
+        original_Sent=original_Sent.replace("!i ","! I ");
+        original_Sent=original_Sent.replace("?i ","? I ");
+        if(original_Sent.startsWith("i ")){
+            original_Sent="I "+original_Sent.substring(2,original_Sent.length());
+        }
         original_Sent = original_Sent.replace("<eos>", "");
         if( original_Sent != null && !original_Sent.isEmpty() ) {
             Annotation document = new Annotation(original_Sent);
