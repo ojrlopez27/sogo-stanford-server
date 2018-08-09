@@ -1,6 +1,5 @@
 package edu.cmu.inmind.multiuser.controller.nlp;
 
-import edu.cmu.inmind.multiuser.controller.Sentence;
 import edu.cmu.inmind.multiuser.controller.common.Preference;
 import edu.cmu.inmind.multiuser.controller.common.Utils;
 import edu.stanford.nlp.ling.CoreAnnotations;
@@ -306,9 +305,18 @@ public class IntentionParsing {
     }
 
 
-
-
 	public static void main(String args[]){
+        testExtractPreference();
+    }
+
+    private static void testExtractPreference(){
+        IntentionParsing ip = getInstance();
+        System.out.println("preference: " + ip.extractPreference("I like to play soccer") );
+        System.out.println("preference: " + ip.extractPreference("this method returns an email object") );
+        System.out.println("preference: " + ip.extractPreference("Returns the the city name, zip code / postal code, latitude-longitude coordinates and nearby personal weather stations"));
+    }
+
+    private static void testClauseBreaking(){
         IntentionParsing ip = getInstance();
         List<String> sentences = new ArrayList<>();
         sentences.add("i can give you the hats if i can have the book and balls <eos>");
